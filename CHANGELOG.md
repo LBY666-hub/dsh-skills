@@ -4,6 +4,13 @@
 
 ## 2026-09-27
 
+**新增 `github-up` 技能**（把任意产出推送到 GitHub 的标准流程）
+
+- 命令 **`/github-up`** —— ⚠️ **技能名不允许下划线**：加载器要求 `^[a-z0-9]+(?:-[a-z0-9]+)*$`，原设想的 `/github_up` 会被直接忽略，故定为连字符形式
+- 交互式七步：确认三件事（推什么 / 推到哪 / 可见性）→ 敏感信息与大文件体检 → 本地 git 准备与提交 → 建远端仓库（走网页，因 DSH 的 GitHub 连接是只读令牌）→ 本机 git + Git Credential Manager 推送 → 用 GitHub 连接读回验证 → 按需开启 GitHub Pages
+- 固化本机实测要点：① MCP 建仓/写内容一律 `403 Resource not accessible by personal access token`（只读 bearer 令牌）② 全局 `credential.helper` 为空值会挡住系统级 GCM，推送须带 `-c credential.helper=manager` ③ 技能产出走本库流程，普通产出走通用流程
+- 同步状态：运行副本 `~\.dsh\skills\github-up` 与库内 `skills/github-up` 内容一致
+
 **建库**（首次整理入库，共 4 个技能）
 
 | 技能 | 变更 |
