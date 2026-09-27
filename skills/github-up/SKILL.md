@@ -1,6 +1,6 @@
 ---
 name: github-up
-description: 把产出推送到 GitHub 的标准流程（交互式七步）—— 用户以 /github-up 调用并说明要推的产出后，依次推进：①确认目标仓库与可见性 ②敏感信息与大文件体检 ③本地 git 准备与提交 ④建远端仓库 ⑤推送（本机 git + Git Credential Manager）⑥用 GitHub 连接读回验证 ⑦按需开启 GitHub Pages。适用于报告、代码、数据集、网页应用、技能库等**任意产出**。未确认"推什么 / 推到哪个仓库 / 公开还是私有"之前，不得推送。
+description: 把产出推送到 GitHub 的标准流程（交互式七步）—— 用户以 /github-up 调用并说明要推的产出后，依次推进：①确认目标仓库与可见性（默认公开） ②敏感信息与大文件体检 ③本地 git 准备与提交 ④建远端仓库 ⑤推送（本机 git + Git Credential Manager）⑥用 GitHub 连接读回验证 ⑦按需开启 GitHub Pages。适用于报告、代码、数据集、网页应用、技能库等**任意产出**。未确认"推什么 / 推到哪个仓库 / 公开还是私有"之前，不得推送。
 disable-model-invocation: true
 ---
 
@@ -16,9 +16,9 @@ disable-model-invocation: true
 
 | 编号 | 铁律 |
 |---|---|
-| **R1 先问后推** | 推送前必须让用户确认三件事：**推什么**（文件/目录）、**推到哪个仓库**（新建还是已有）、**公开还是私有**。缺一项就只问那一项。 |
-| **R2 可见性默认私有** | 用户没明确说"公开"时，一律按**私有**建议；若要公开，必须点明"内容将对所有人可见"。 |
-| **R3 密钥绝不外泄** | 推送前跑敏感信息扫描；命中就停下来问用户，**先处理再推**。任何情况下不打印 token/密钥/序列号。 |
+| **R1 先问后推** | 推送前必须让用户确认三件事：**推什么**（文件/目录）、**推到哪个仓库**（新建还是已有）、**可见性**。缺一项就只问那一项。 |
+| **R2 可见性默认公开** | 用户的既定偏好是**公开**仓库（其名下 `marketing-brush-app`、`dsh-skills` 均为公开）→ **默认按公开建议**；只有用户明确说"私有"时才建私有。若内容含未发表数据或密钥，我可以提醒一句风险，但**以用户指令为准**。 |
+| **R3 密钥绝不外泄** | 推送前必须跑敏感信息扫描；命中就停下来问用户，**先处理再推**。默认公开放大了这条的重要性。任何情况下不打印 token/密钥/序列号。 |
 | **R4 不推垃圾** | 大文件（>50 MB 提醒、>100 MB 拒绝）、`node_modules/`、`.venv/`、模型权重、构建产物、临时文件，先排除或写进 `.gitignore`。 |
 | **R5 读回验证** | 推完必须用 GitHub 连接**读回**仓库文件清单 + 提交号，并与本机 `git rev-parse HEAD` 比对一致，再报告完成。 |
 | **R6 失败即披露** | 报错就贴原文（含 HTTP 状态码）+ 我的判断与处置；不静默换路、不谎报成功。 |
@@ -31,7 +31,7 @@ disable-model-invocation: true
 ```
 【推什么】<文件/目录的绝对路径；若在会话工作区就直接给相对路径>
 【推到哪】新建仓库 <名字>  ／ 已有仓库 <LBY666-hub/xxx>
-【可见性】私有（默认）／公开
+【可见性】公开（默认）／私有
 【提交信息】<可选，不给就由我按内容拟一句>
 ```
 
@@ -99,7 +99,7 @@ git log --oneline | Select-Object -First 3
 
 1. 让用户打开 https://github.com/new
 2. 填 **Repository name**（小写 kebab-case，如 `my-report-2026`）、**Description**（可选）
-3. **Choose visibility** 按 §1 的决定选 Private/Public
+3. **Choose visibility** 选 **Public**（默认）；只有用户明确要私有时才选 Private
 4. **Add README / .gitignore / license 全部留空**（保持空仓，避免多一次 Initial commit 造成历史分叉）
 5. 点 Create repository，用户回一句"建好了"
 6. 我设 remote：
@@ -181,12 +181,12 @@ git -c credential.helper=manager push
 
 | 症状 / 原文 | 原因 | 处置 |
 |---|---|---|
-| `403 Resource not accessible by personal access token`（来自 `create_repository` 或 `push_files`） | DSH 的 GitHub 连接是**只读 bearer 令牌** | 改走 §4/§5（网页建仓 + 本机 git）；或让用户给令牌加权限：classic 勾 `public_repo`（公开仓库）／`repo`（私有仓库），fine-grained 加 **Contents: Read and write**（+ 把该仓库加入 Repository access，想自动建仓还要 **Administration: Read and write**） |
+| `403 Resource not accessible by personal access token`（来自 `create_repository` 或 `push_files`） | DSH 的 GitHub 连接是**只读 bearer 令牌** | 改走 §4/§5（网页建仓 + 本机 git）；或让用户给令牌加权限：classic 勾 `public_repo`（公开仓库足够）／`repo`（含私有仓库），fine-grained 加 **Contents: Read and write**（+ 把该仓库加入 Repository access，想自动建仓还要 **Administration: Read and write**） |
 | `push` 提示 `Authentication failed` / 401 | 未授权或凭据失效 | `git -c credential.helper=manager push`；仍失败则清掉旧凭据（Windows 凭据管理器里删 `git:https://github.com`）重新授权 |
 | **GCM 不弹窗、命令一直挂着** | 全局 `credential.helper` 空值挡住了系统级 manager | 用 `-c credential.helper=manager`；长期修法：`git config --global --unset credential.helper` |
-| 私有仓库推送被拒（令牌只有 `public_repo`） | 作用域不含私有仓库 | 换 `repo` 作用域，或把仓库改为公开（须用户明确同意） |
+| 推送被拒且仓库是私有 | 令牌作用域只有 `public_repo` | 换 `repo` 作用域；或按用户偏好改回公开（默认即为公开，一般不会遇到） |
 | 文件 >100 MB 被拒 | GitHub 硬限制 | 用 Git LFS；或打包成 zip / 走 Release 附件 |
-| `fetch failed` / 连接超时 | 本机访问 GitHub 时通时断 | 重试 1 次；必要时启用 Clash 并配代理（Node 的 fetch 需 `NODE_USE_ENV_PROXY=1`，git 可用 `-c http.proxy=`） |
+| `fetch failed` / `Failed to connect to github.com:443` | 本机访问 GitHub 时通时断（实测会自愈） | **先重试 1~4 次（间隔 8 秒）**，多数情况第 1~2 次即成功；仍失败则查代理：系统代理 `127.0.0.1:7897`（Clash）是否在跑、git 是否需 `-c http.proxy=`；Node 的 fetch 需 `NODE_USE_ENV_PROXY=1` |
 | 推送后发现有敏感文件 | — | `git rm --cached <file>` + 提交推送，并**提醒轮换密钥**；历史清理用 `git filter-repo` |
 
 ---
@@ -197,6 +197,7 @@ git -c credential.helper=manager push
 |---|---|
 | GitHub 账号 | `LBY666-hub`（狗蛋） |
 | 已有仓库 | `marketing-brush-app`（公开·刷题 PWA）、`dsh-skills`（公开·技能库） |
+| 可见性偏好 | **公开**（默认）；私有需用户明确要求 |
 | 仓库命名习惯 | 小写 kebab-case |
 | 本机 git 身份 | `LBY666-hub` / `15762959246@163.com`（全局已设） |
 | 凭据 | **GCM 可用**（`C:\Program Files\Git\mingw64\bin\git-credential-manager.exe`），凭据已存 `git:https://github.com`；但全局 `credential.helper=''`（空值）→ 必须 `-c credential.helper=manager` |
@@ -209,7 +210,7 @@ git -c credential.helper=manager push
 ## 11. 交付摘要格式（推完给用户）
 
 ```
-✅ 已推送：<仓库链接>（<公开/私有>，分支 main，提交 <短哈希>）
+✅ 已推送：<仓库链接>（公开，分支 main，提交 <短哈希>）
 文件：N 个 / X MB ｜ 主要文件：…
 读回验证：GitHub 侧文件清单与本机一致 ✅
 后续维护：cd "<目录>" && git add -A && git commit -m "…" && git -c credential.helper=manager push
